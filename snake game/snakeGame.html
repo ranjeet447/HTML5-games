@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Game|snake</title>
+
+
+  </head>
+  <body>
+    <div class="row">
+      <canvas id="gameCanvas" width="600" height="600"></canvas>
+      <button type="button" id="pauseBut" onclick="pauseGame()">pause</button>
+      <p id="score">Score</p>
+    </div>
+
+
+    <script type="text/javascript">
+      var canvas;
+      var ctx;
+
+      var headX=5;
+      var headY=5;
+      var fx = 15;
+      var fy = 15;
+      var gs=20;
+      var tc = 30;
+
+      var trail = [];
+      var tail = 5;
+
+      var xv = 0;//x  velocity
+      var yv = 0;//y  velocity
+      var level =1;
+
+      var showScoreScreen = true;
+      var showScore = false;
+      var score = 0;
+      var isPaused = false;
+
+      var mouseX;
+      var mouseY;
+
+      //for mobile swipe gestures
+      var xDown = null;
+      var yDown = null;
+
+      window.onload = function () {
+        canvas = document.getElementById("gameCanvas");
+        ctx = canvas.getContext("2d");
+
+        document.addEventListener('touchstart', handleTouchStart, false);
+        document.addEventListener('touchmove', handleTouchMove, false);
+
+        canvas.addEventListener('mousedown',handleMouseClick);
+        document.addEventListener("keydown",keyPush);
+        canvas.addEventListener('mousemove',function (evt) {
+                          var mousePos = calculateMousePos(evt);
+                          mouseX = mousePos.mouseX;
+                          mouseY = mousePos.mouseY;
+
+          });
+          InvervalTimer(game,1000/15);
+      }
+
+      function game() {
+        document.getElementById('score').innerHTML = `Score:${score}`;
+        if(isPaused || showScoreScreen){
+          document.getElementById('pauseBut').style.display = 'none';
+        }else {
+          document.getElementById('pauseBut').style.display = 'inline';
+        }
+
+        if(isPaused && showScoreScreen){
+          ctx.fillStyle = 'black';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle='white';
+          ctx.font="30px Arial"
+          ctx.textAlign = 'center';
+          ctx.fillText('Use arrow keys to control the snake',canvas.width/2,160);
+          ctx.fillText(`level: ${level}`,canvas.width/2,canvas.height/2-80);//level text
+          if(showScore)
+            ctx.fillText(`Score: ${score}`,canvas.width/2,canvas.height/2);//score text
+          ctx.fillStyle = 'green';
+          ctx.fillRect(canvas.width/2-75,canvas.height/2+40,150,50);//resume button
+          ctx.fillRect(canvas.width/2-100,canvas.height/2+120,200,50);//new Game button
+          ctx.fillStyle='white';
+          ctx.fillText('Resume',canvas.width/2,canvas.height/2+75);//resume button
+          ctx.fillText('new Game',canvas.width/2,canvas.height/2+75+80);//new Game button
+          return;
+        }
+        if(showScoreScreen){
+          ctx.fillStyle = 'black';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle='white';
+          ctx.font="30px Arial"
+          ctx.textAlign = 'center';
+          ctx.fillText('Use arrow keys to control the snake',canvas.width/2,160);
+          ctx.fillText(`level: ${level}`,canvas.width/2,canvas.height/2-80);//level text
+          if(showScore)
+            ctx.fillText(`Score: ${score}`,canvas.width/2,canvas.height/2);//score text
+          ctx.fillStyle = 'green';
+          ctx.fillRect(canvas.width/2-90,canvas.height/2-110,40,40);//level down
+          ctx.fillRect(canvas.width/2+60,canvas.height/2-110,40,40);//level up
+          ctx.fillRect(canvas.width/2-75,canvas.height/2+40,150,50);//play button
+          ctx.fillStyle='white';
+          ctx.fillText('Play',canvas.width/2,canvas.height/2+75);//play button
+          ctx.beginPath();
+          ctx.moveTo(canvas.width/2-60,canvas.height/2-105);
+           ctx.lineTo(canvas.width/2-60, canvas.height/2-75);
+           ctx.lineTo(canvas.width/2-85, canvas.height/2-90);
+           ctx.fill();
+           ctx.beginPath();
+           ctx.moveTo(canvas.width/2+70,canvas.height/2-105);
+            ctx.lineTo(canvas.width/2+70, canvas.height/2-75);
+            ctx.lineTo(canvas.width/2+95, canvas.height/2-90);
+            ctx.fill();
+          return;
+        }
+
+
+        headX+=xv;
+        headY+=yv;
+
+        if(headX<0){
+          headX=tc-1;
+        }
+        if(headX>tc-1){
+          headX=0;
+        }
+        if(headY<0){
+          headY=tc-1;
+        }
+        if(headY>tc-1){
+          headY=0;
+        }
+
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        ctx.fillStyle = 'lime';
+        for(var i=0;i<trail.length;i++){
+          ctx.fillRect(trail[i].x*gs,trail[i].y*gs,gs-2,gs-2);
+          if(trail[i].x===headX && trail[i].y===headY){
+            gameOver();
+          }
+        }
+
+
+        trail.push({
+          x:headX,
+          y:headY
+        });
+        while(trail.length>tail){
+          trail.shift();
+        }
+
+        if(headX===fx && headY===fy){
+          tail++;
+          score++;
+          fx=Math.floor(Math.random()*tc);
+          fy=Math.floor(Math.random()*tc);
+        }
+        ctx.fillStyle = 'red';
+        ctx.fillRect(fx*gs,fy*gs,gs-2,gs-2);
+      }
+
+      function pauseGame() {
+        showScoreScreen = true;
+        isPaused=true;
+        game();
+      }
+
+      function gameOver() {
+        tail=5;
+        showScore =true;
+        if(score!=0)
+          showScoreScreen=true;
+      }
+
+      function keyPush(evt) {
+        switch(evt.keyCode) {
+            case 37:
+                if(xv==1 && yv==0){}
+                else{xv=-1;yv=0;}
+                break;
+            case 38:
+                if(xv==0 && yv==1){}
+                else{xv=0;yv=-1;}
+                break;
+            case 39:
+                if(xv==-1 && yv==0){}
+                else{xv=1;yv=0;}
+                break;
+            case 40:
+                if(xv==0 && yv==-1){}
+                else{xv=0;yv=1;}
+                break;
+            case 32:
+                if(!isPaused){
+                  pause();isPaused=true;
+                }
+                else if(isPaused){
+                  resume();isPaused=false;
+                }
+        }
+      }
+      function handleMouseClick(evt) {
+        //play button
+          if(showScoreScreen && !isPaused &&  mouseX>canvas.width/2-75 && mouseY>canvas.height/2+40
+              && mouseX<canvas.width/2+75 && mouseY<canvas.height/2+90){
+               showScoreScreen = false;
+               score =0;
+               isPaused = false;
+          }
+          //new Game button
+          if(showScoreScreen && isPaused &&  mouseX>canvas.width/2-100 && mouseY>canvas.height/2+120
+              && mouseX<canvas.width/2+100 && mouseY<canvas.height/2+170){
+               gameOver();
+               showScoreScreen = false;
+               score =0;
+               isPaused = false;
+          }
+          //Resume button
+          if(showScoreScreen && isPaused &&  mouseX>canvas.width/2-75 && mouseY>canvas.height/2+40
+              && mouseX<canvas.width/2+75 && mouseY<canvas.height/2+90){
+               showScoreScreen = false;
+               isPaused = false;
+               resume();
+          }
+          //level down button
+          if(showScoreScreen && mouseX>canvas.width/2-90 && mouseY>canvas.height/2-110
+              && mouseX<canvas.width/2-90+40 && mouseY<canvas.height/2-110 +40){
+                if(level>1)
+                  level--;
+          }
+          //level up button
+          if(showScoreScreen && mouseX>canvas.width/2+60 && mouseY>canvas.height/2-110
+              && mouseX<canvas.width/2+60+40 && mouseY<canvas.height/2-110 +40){
+                if(level<10)
+                  level++;
+              }
+        }
+      function calculateMousePos(evt) {
+            var rect = canvas.getBoundingClientRect();
+            var root = document.documentElement;
+            var mouseX = evt.clientX - rect.left - root.scrollLeft;
+            var mouseY = evt.clientY - rect.top - root.scrollTop;
+            return {mouseX, mouseY};
+        }
+      function InvervalTimer(callback, interval) {
+            var timerId, startTime, remaining = 0;
+            var state = 0; //  0 = idle, 1 = running, 2 = paused, 3= resumed
+
+            this.pause = function () {
+                if (state != 1) return;
+
+                remaining = interval - (new Date() - startTime);
+                window.clearInterval(timerId);
+                state = 2;
+            };
+
+            this.resume = function () {
+                if (state != 2) return;
+
+                state = 3;
+                window.setTimeout(this.timeoutCallback, remaining);
+            };
+
+            this.timeoutCallback = function () {
+                if (state != 3) return;
+
+                callback();
+
+                startTime = new Date();
+                timerId = window.setInterval(callback, interval);
+                state = 1;
+            };
+
+            startTime = new Date();
+            timerId = window.setInterval(callback, interval);
+            state = 1;
+        }
+
+
+      function handleTouchStart(evt) {
+            xDown = evt.touches[0].clientX;
+            yDown = evt.touches[0].clientY;
+        };
+      function handleTouchMove(evt) {
+          if ( ! xDown || ! yDown ) {
+              return;
+          }
+
+          var xUp = evt.touches[0].clientX;
+          var yUp = evt.touches[0].clientY;
+
+          var xDiff = xDown - xUp;
+          var yDiff = yDown - yUp;
+
+          if ( Math.abs( xDiff ) > Math.abs( yDiff ) ) {/*most significant*/
+              if ( xDiff > 0 ) {
+                // left swipe
+                if(xv==1 && yv==0){}
+                else{xv=-1;yv=0;}
+              } else {
+                  /* right swipe */
+                  if(xv==-1 && yv==0){}
+                  else{xv=1;yv=0;}
+              }
+          } else {
+              if ( yDiff > 0 ) {
+                  /* up swipe */
+                  if(xv==0 && yv==1){}
+                  else{xv=0;yv=-1;}
+              } else {
+                  /* down swipe */
+                  if(xv==0 && yv==-1){}
+                  else{xv=0;yv=1;}
+              }
+          }
+          /* reset values */
+          xDown = null;
+          yDown = null;
+      };
+
+
+    </script>
+    <style media="screen">
+    html, body {
+      margin: 20;
+      height: 100%;
+      overflow: hidden;
+    }
+    button{
+      display: inline;
+      background-color: green;
+       border: none;
+       color: white;
+       padding: 15px 32px;
+       text-align: center;
+       font-size: 16px;
+       margin: 4px 2px;
+       display: inline;
+    }
+
+    #gameCanvas{
+      margin: 20;
+      float: left;
+    }
+    #score{
+      margin: 20px;
+      font-size: 36px;
+    }
+    </style>
+  </body>
+</html>
